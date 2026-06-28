@@ -1,0 +1,33 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install base packages and npm dependencies
+RUN npm install -g npm@latest
+
+# Copy ONLY what we need
+COPY package.json package-lock.json /app/
+
+# Install dependencies
+RUN npm install --omit=dev --no-audit --no-fund 2>&1
+
+# Copy application
+COPY server.js /app/
+
+# Create attachment directory
+RUN mkdir -p /app/attachments && chmod 755 /app/attachments
+
+# Non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 && \
+    chown -R nodejs:nodejs /app
+
+USER nodejs
+
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD test -f /app/server.js && test -d /app/node_modules || exit 1
+
+CMD ["node", "server.js"]
