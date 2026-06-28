@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  strato-mail-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: strato-mail-mcp
+    image: strato-mail-mcp:latest
+    restart: unless-stopped
+    
+    # Environment variables - CONFIGURE THESE!
+    environment:
+      IMAP_HOST: ${IMAP_HOST:-imap.strato.com}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_USER: ${IMAP_USER}
+      IMAP_PASSWORD: ${IMAP_PASSWORD}
+      SMTP_HOST: ${SMTP_HOST:-smtp.strato.com}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      ATTACHMENT_DIR: /app/attachments
+      NODE_ENV: production
+    
+    # Volumes for attachment persistence
+    volumes:
+      - strato-attachments:/app/attachments
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Network
+    networks:
+      - mail-network
+
+volumes:
+  strato-attachments:
+    driver: local
+
+networks:
+  mail-network:
+    driver: bridge
